@@ -34,10 +34,53 @@ app.get('/api/persons', (req, res) => {
 })
 
 app.get('/info', (req, res) => {
-	res.send(`
+	res.send(
+		`
     <p>Phonebook has info for ${persons.length} people</p>
     <p>${new Date()}</p>
-  `)
+    `
+	)
+})
+
+app.get('/api/persons/:id', (req, res) => {
+	const id = Number(req.params.id)
+	const person = persons.find((person) => person.id === id)
+	if (person) {
+		res.json(person)
+	} else {
+		res.status(404).end()
+	}
+})
+
+app.delete('/api/persons/:id', (req, res) => {
+	const id = Number(req.params.id)
+	persons = persons.filter((person) => person.id !== id)
+	res.status(204).end()
+})
+
+const generateId = () => {
+	return Math.floor(Math.random() * (200 - 5) + 5)
+}
+
+app.post('/api/persons', (req, res) => {
+	const body = req.body
+	if (!body.name || !body.number) {
+		return res.status(400).json({ error: 'missing name or number' })
+	}
+	const personFound = persons.find(
+		(person) => person.name.toLowerCase() === body.name.toLowerCase()
+	)
+	if (personFound) {
+		return res.status(400).json({ error: 'name must be unique' })
+	}
+	const person = {
+		id: generateId(),
+		name: body.name,
+		number: body.number,
+	}
+	persons = persons.concat(person)
+	console.log('🚀 > app.post > persons', persons)
+	res.json(person)
 })
 
 const PORT = 3001
