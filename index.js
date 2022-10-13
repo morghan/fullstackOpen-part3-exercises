@@ -1,19 +1,25 @@
 const express = require('express')
+const morgan = require('morgan')
+
 const app = express() // creates an express app which is a http server
+
 // Middleware - Order matters!
-// Request body parser is called before our request logger
-// This is necessary since out logger logs the request body
-
-app.use(express.json()) //request body parser
-
-const requestLogger = (req, res, next) => {
-	console.log('Method:', req.method)
-	console.log('Path:', req.path)
-	console.log('Body:', req.body)
-	console.log('---')
-	next()
-}
-app.use(requestLogger)
+app.use(express.json()) // request body parser
+morgan.token('body', (req, res) => JSON.stringify(req.body)) //	Custom logger token
+app.use(
+	morgan((tokens, req, res) =>
+		[
+			tokens.method(req, res),
+			tokens.url(req, res),
+			tokens.status(req, res),
+			tokens.res(req, res, 'content-length'),
+			'-',
+			tokens['response-time'](req, res),
+			'ms',
+			`${tokens.method(req, res) === 'POST' ? tokens.body(req, res) : ''}`,
+		].join(' ')
+	)
+) //	Used morgan's custom format function to log request's body only for POST method
 
 let persons = [
 	{
@@ -92,13 +98,13 @@ app.post('/api/persons', (req, res) => {
 		number: body.number,
 	}
 	persons = persons.concat(person)
-	console.log('🚀 > app.post > persons', persons)
 	res.json(person)
 })
+
 const unknownEndpoint = (req, res) => {
 	res.status(404).send({ error: 'unknown endpoint' })
 }
-
 app.use(unknownEndpoint)
+
 const PORT = 3001
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
