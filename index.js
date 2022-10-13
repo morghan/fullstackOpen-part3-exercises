@@ -1,6 +1,19 @@
 const express = require('express')
 const app = express() // creates an express app which is a http server
+// Middleware - Order matters!
+// Request body parser is called before our request logger
+// This is necessary since out logger logs the request body
+
 app.use(express.json()) //request body parser
+
+const requestLogger = (req, res, next) => {
+	console.log('Method:', req.method)
+	console.log('Path:', req.path)
+	console.log('Body:', req.body)
+	console.log('---')
+	next()
+}
+app.use(requestLogger)
 
 let persons = [
 	{
@@ -82,6 +95,10 @@ app.post('/api/persons', (req, res) => {
 	console.log('🚀 > app.post > persons', persons)
 	res.json(person)
 })
+const unknownEndpoint = (req, res) => {
+	res.status(404).send({ error: 'unknown endpoint' })
+}
 
+app.use(unknownEndpoint)
 const PORT = 3001
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
