@@ -1,6 +1,8 @@
+require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
+const Person = require('./models/person')
 
 const app = express() // creates an express app which is a http server
 
@@ -52,7 +54,9 @@ app.get('/', (req, res) => {
 })
 
 app.get('/api/persons', (req, res) => {
-	res.json(persons)
+	Person.find({}).then((persons) => {
+		res.json(persons)
+	})
 })
 
 app.get('/info', (req, res) => {
@@ -89,19 +93,25 @@ app.post('/api/persons', (req, res) => {
 	if (!body.name || !body.number) {
 		return res.status(400).json({ error: 'missing name or number' })
 	}
-	const personFound = persons.find(
-		(person) => person.name.toLowerCase() === body.name.toLowerCase()
-	)
-	if (personFound) {
-		return res.status(400).json({ error: 'name must be unique' })
-	}
-	const person = {
-		id: generateId(),
-		name: body.name,
-		number: body.number,
-	}
-	persons = persons.concat(person)
-	res.json(person)
+	// const personFound = persons.find(
+	// 	(person) => person.name.toLowerCase() === body.name.toLowerCase()
+	// )
+	// if (personFound) {
+	// 	return res.status(400).json({ error: 'name must be unique' })
+	// }
+	// const person = {
+	// 	id: generateId(),
+	// 	name: body.name,
+	// 	number: body.number,
+	// }
+	const person = new Person({
+		name: body.name.trim(),
+		number: body.number.trim(),
+	})
+
+	person.save().then((savedPerson) => {
+		res.json(savedPerson)
+	})
 })
 
 const unknownEndpoint = (req, res) => {
@@ -109,5 +119,5 @@ const unknownEndpoint = (req, res) => {
 }
 app.use(unknownEndpoint)
 
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
