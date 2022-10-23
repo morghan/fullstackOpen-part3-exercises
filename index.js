@@ -90,19 +90,29 @@ app.delete('/api/persons/:id', (req, res, next) => {
 		.catch((error) => next(error))
 })
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
 	const body = req.body
 	if (!body.name || !body.number) {
 		return res.status(400).json({ error: 'missing name or number' })
 	}
 
-	const person = new Person({
-		name: body.name.trim(),
-		number: body.number.trim(),
-	})
+	Person.find({ name: body.name.trim() }).then((foundPerson) => {
+		if (foundPerson.length) {
+			console.log('🚀 > Person.find > foundPerson', foundPerson)
+			next(new Error('Name already saved'))
+		} else {
+			const person = new Person({
+				name: body.name.trim(),
+				number: body.number.trim(),
+			})
 
-	person.save().then((savedPerson) => {
-		res.json(savedPerson)
+			person
+				.save()
+				.then((savedPerson) => {
+					res.json(savedPerson)
+				})
+				.catch((error) => next(error))
+		}
 	})
 })
 
@@ -114,7 +124,11 @@ app.put('/api/persons/:id', (req, res, next) => {
 		number: body.number,
 	}
 
-	Person.findByIdAndUpdate(req.params.id, person, { new: true })
+	Person.findByIdAndUpdate(req.params.id, person, {
+		new: true,
+		runValidators: true,
+		context: 'query',
+	})
 		.then((updatedPerson) => {
 			res.json(updatedPerson)
 		})
@@ -130,6 +144,10 @@ const errorHandler = (err, req, res, next) => {
 	console.log('🚀 > errorHandler > err', err.message)
 	if (err.name === 'CastError') {
 		return res.status(400).send({ error: 'malformatted id' })
+	} else if (err.name === 'ValidationError') {
+		return res.status(400).json({ error: err.message })
+	} else {
+		return res.status(400).json({ error: err.message })
 	}
 	next(err)
 }

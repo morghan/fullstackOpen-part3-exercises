@@ -13,8 +13,24 @@ mongoose
 	})
 
 const personSchema = new mongoose.Schema({
-	name: String,
-	number: String,
+	name: {
+		type: String,
+		minLength: 3,
+		required: true,
+	},
+	number: {
+		type: String,
+		minLength: [8, 'must be at least 8 characters long'],
+		required: true,
+		validate: {
+			validator: (n) => {
+				return /^\d{2,3}-\d+$/.test(n)
+			},
+			message: (props) => {
+				return `${props.value} is not a valid number. Make sure it fits the '2 or 3 digits-All digits' format`
+			},
+		},
+	},
 })
 
 // To replace _id for id and remove __v from Schema
